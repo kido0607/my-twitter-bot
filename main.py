@@ -1,22 +1,46 @@
 import os, requests, feedparser
 
-# 스텔라이브 공식 트위터 RSS (무료 브리지 이용)
+# 설정
 RSS_URL = "https://rsshub.app/twitter/user/stellive_kr"
-WEBHOOK_URL = os.environ['DISCORD_WEBHOOK_URL']
+WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL')
 LAST_FILE = "last_tweet.txt"
 
 def main():
+    # 웹훅 주소 체크
+    if not WEBHOOK_URL:
+        print("에러: DISCORD_WEBHOOK_URL이 설정되지 않았습니다.")
+        return
+
+    # 피드 가져오기
     feed = feedparser.parse(RSS_URL)
-    if not feed.entries: return
+    if not feed.entries:
+        print("새 글이 없거나 RSS 서버 응답이 없습니다.")
+        return
     
     latest_id = feed.entries[0].id
-    last_id = open(LAST_FILE).read().strip() if os.path.exists(LAST_FILE) else ""
+    
+    # 파일이 없으면 만들고 시작 (에러 방지 핵심!)
+    if not os.path.exists(LAST_FILE):
+        with open(LAST_FILE, "w") as f:
+            f.write("")
+
+    with open(LAST_FILE, "r") as f:
+        last_id = f.read().strip()
 
     if latest_id != last_id:
-        # vxtwitter로 변환하여 사진/영상 잘 보이게 전송
         link = feed.entries[0].link.replace("x.com", "vxtwitter.com")
-        requests.post(WEBHOOK_URL, json={"content": f"📢 **스텔라이브 새 소식!**\n{link}"})
-        with open(LAST_FILE, "w") as f: f.write(latest_id)
+        payload = {"content": f"📢 **새 소식이 올라왔습니다!**\n{link}"}
+        
+        # 전송 시도
+        res = requests.post(WEBHOOK_URL, json=payload)
+        if res.status_code in [200, 204]:
+            with open(LAST_FILE, "w") as f:
+                f.write(latest_id)
+            print("전송 완료!")
+        else:
+            print(f"전송 실패 코드: {res.status_code}")
+    else:
+        print("새로운 글이 없습니다.")
 
 if __name__ == "__main__":
     main()
