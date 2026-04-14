@@ -2,17 +2,17 @@ name: Twitter Bot
 on:
   schedule:
     - cron: '*/10 * * * *' # 10분마다 실행
-  workflow_dispatch:
+  workflow_dispatch: # 수동 실행 버튼 활성화
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4 # v3에서 v4로 업데이트
       
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # v4에서 v5로 업데이트
         with:
           python-version: '3.9'
           
@@ -20,7 +20,7 @@ jobs:
       
       - name: Run Python Script
         env:
-          # 이 부분이 핵심입니다!
+          # 환경 변수를 여기서 반드시 연결해줘야 코드가 웹훅 주소를 인식합니다.
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python main.py
         
